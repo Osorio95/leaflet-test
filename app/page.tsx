@@ -1,5 +1,5 @@
 'use client'
-import ToolBar from '@/components/tool-bar';
+import UI from '@/components/main-ui';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
@@ -18,7 +18,7 @@ const Home = () => {
     return (
         <main>
             <MainMap changeBtn={setButtonName} trigger={trigger} />
-            <ToolBar colorBtn={buttonName} removeHandler={() => removeHandler()} />
+            <UI colorBtn={buttonName} removeHandler={() => removeHandler()} />
         </main>
     )
 }

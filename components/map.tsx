@@ -1,8 +1,11 @@
 'use client'
 import { getRandomColorRGB } from '@/utils/utils'
+import { useWindowSize } from "@uidotdev/usehooks";
 import { LatLngExpression, divIcon, DivIcon } from 'leaflet'
 import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl } from 'react-leaflet'
+import { FullscreenControl } from "react-leaflet-fullscreen";
+import "react-leaflet-fullscreen/styles.css";
 
 type Props = {
     trigger: number
@@ -10,17 +13,26 @@ type Props = {
 }
 
 const MainMap = ({ changeBtn, trigger }: Props) => {
+    const { width } = useWindowSize()
+
     return (
         <div id="map">
-            <MapContainer
-                center={[51.505, -0.09]}
-                zoom={13}
+            <MapContainer scrollWheelZoom
+                center={[8.1906335, -80.9194565]}
+                zoom={8}
                 className='w-full h-full z-0'>
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <LocationMarker changeBtn={(color) => changeBtn(color)} trigger={trigger} />
+                <LayersControl position={width! <= 768 ? "topright" : "topleft"} >
+                    <LayersControl.BaseLayer checked name="arcgisonline">
+                        <TileLayer attribution='&copy; Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+                    </LayersControl.BaseLayer>
+
+                    <LayersControl.BaseLayer name="openstreetmap">
+                        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    </LayersControl.BaseLayer>
+                </LayersControl>
+                <FullscreenControl />
             </MapContainer>
         </div>
     );
