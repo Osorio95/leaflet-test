@@ -1,11 +1,13 @@
 'use client'
-import { getRandomColorRGB } from '@/utils/utils'
+import { getRandomColorRGB, parseCoordinates } from '@/utils/utils'
 import { useWindowSize } from "@uidotdev/usehooks";
-import { LatLngExpression, divIcon, DivIcon } from 'leaflet'
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl } from 'react-leaflet'
+import { LeafletMouseEvent, LatLngLiteral, LatLngExpression, LeafletEventHandlerFnMap, LeafletMouseEventHandlerFn } from 'leaflet'
+import { useMemo, useState } from 'react'
+import { MapContainer, TileLayer, LayersControl, Polygon } from 'react-leaflet'
 import { FullscreenControl } from "react-leaflet-fullscreen";
+import { kmls } from '@/data/kmls';
 import "react-leaflet-fullscreen/styles.css";
+import { PolyObj } from '@/types/data';
 
 type Props = {
     trigger: number
@@ -14,9 +16,26 @@ type Props = {
 
 const MainMap = ({ changeBtn, trigger }: Props) => {
     const { width } = useWindowSize()
+    const [selectedFarm, setSelectedFarm] = useState<number>(1)
 
-    const BING_API_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
-    const yttrium_attribution = '<a href="https://yttrium-technology.com/" target="_blank">Yttrium</a>';
+    const polygons = useMemo(() => {
+        let polyObj: PolyObj[] = []
+        kmls.map((kml, idx) => {
+            const parser = new DOMParser();
+            const singleKml = parser.parseFromString(kml, 'text/xml');
+            const polygon = parseCoordinates(singleKml.getElementsByTagName('coordinates')[0].textContent!)
+            const name = (singleKml.getElementsByTagName('name')[0].textContent!).split('.kml')[0]
+
+            polyObj.push({ id: polyObj.length, name: name, coordinates: polygon, value: null })
+        })
+        return polyObj
+    }, [kmls])
+
+    const eventHandler = {
+            click: (e: LeafletMouseEvent) => {
+                changeBtn(e.target)
+            }
+    }
 
     return (
         <div id="map">
@@ -26,9 +45,14 @@ const MainMap = ({ changeBtn, trigger }: Props) => {
                 className='w-full h-full z-0'>
                 <LayersControl position={width! <= 768 ? "topright" : "topleft"} >
                     <LayersControl.BaseLayer checked name="google">
-                        <TileLayer  attribution='&copy; Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                        <TileLayer attribution='&copy; Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                             url="http://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}" />
                     </LayersControl.BaseLayer>
+
+                    {/* <LayersControl.BaseLayer name="bing">
+                        <TileLayer accessToken={BING_API_KEY} attribution='See https://docs.microsoft.com/en-us/rest/api/maps/render-v2/get-map-tile for details.'
+                            url="https://atlas.microsoft.com/map/tile?api-version=2022-08-01&tilesetId=microsoft.imagery&zoom={z}&x={x}&y={y}" />
+                    </LayersControl.BaseLayer> */}
 
                     <LayersControl.BaseLayer name="arcgisonline">
                         <TileLayer attribution='&copy; Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
@@ -41,48 +65,12 @@ const MainMap = ({ changeBtn, trigger }: Props) => {
                     </LayersControl.BaseLayer>
                 </LayersControl>
                 <FullscreenControl />
-                <LocationMarker changeBtn={(e) => changeBtn(e)} trigger={trigger} />
+                {polygons.map((poly, idx) => (
+                    <Polygon color='blue' weight={poly.id === selectedFarm ? 2 : 0} fillOpacity={1} eventHandlers={eventHandler} key={idx} positions={poly.coordinates} />
+                ))}
             </MapContainer>
         </div>
     );
-}
-
-type customMarker = {
-    location: LatLngExpression
-    icon: DivIcon
-}
-
-const LocationMarker = ({ changeBtn, trigger }: Props) => {
-    const [markers, setMarkers] = useState<customMarker[]>([])
-
-    const customIcon = (cn: string) => divIcon({
-        className: "rounded-full border-2 border-black overflow-hidden",
-        html: `<div style="background-color: ${cn}; height: 100%; width: 100%;"></div>`,
-        iconSize: [36, 36],
-    });
-
-    const map = useMapEvents({
-        click(e) {
-            const cn = getRandomColorRGB()
-            setMarkers([...markers, { location: e.latlng, icon: customIcon(cn) }])
-            changeBtn(cn)
-        },
-    })
-
-    useEffect(() => {
-        setMarkers([])
-        changeBtn("")
-    }, [trigger])
-
-    return (
-        <>
-            {markers.map((mark, idx) => (
-                <Marker key={`marker-${idx}`} position={mark.location} icon={mark.icon} >
-
-                </Marker>
-            ))}
-        </>
-    )
 }
 
 export default MainMap
