@@ -36,11 +36,12 @@ const MainMap = ({ changeBtn, trigger }: Props) => {
                     </LayersControl.BaseLayer>
 
                     <LayersControl.BaseLayer name="openstreetmap">
-                        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     </LayersControl.BaseLayer>
                 </LayersControl>
                 <FullscreenControl />
+                <LocationMarker changeBtn={(e) => changeBtn(e)} trigger={trigger} />
             </MapContainer>
         </div>
     );
