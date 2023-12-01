@@ -1,13 +1,15 @@
 'use client'
 import { getRandomColorRGB, parseCoordinates } from '@/utils/utils'
 import { useWindowSize } from "@uidotdev/usehooks";
-import { LeafletMouseEvent, LatLngLiteral, LatLngExpression, LeafletEventHandlerFnMap, LeafletMouseEventHandlerFn } from 'leaflet'
-import { useMemo, useState } from 'react'
-import { MapContainer, TileLayer, LayersControl, Polygon } from 'react-leaflet'
+import { LeafletMouseEvent, LatLngLiteral, LatLngExpression, LeafletEventHandlerFnMap, LeafletMouseEventHandlerFn, latLngBounds, LatLngBounds } from 'leaflet'
+import { RefAttributes, useMemo, useRef, useState } from 'react'
+import { MapContainer, TileLayer, LayersControl, Polygon, FeatureGroup, useMapEvents, useMap } from 'react-leaflet'
 import { FullscreenControl } from "react-leaflet-fullscreen";
 import { kmls } from '@/data/kmls';
 import "react-leaflet-fullscreen/styles.css";
 import { PolyObj } from '@/types/data';
+import Button from './ui/button';
+import MapElements from './map-elements';
 
 type Props = {
     trigger: number
@@ -17,6 +19,7 @@ type Props = {
 const MainMap = ({ changeBtn, trigger }: Props) => {
     const { width } = useWindowSize()
     const [selectedFarm, setSelectedFarm] = useState<number>(1)
+    const [mapBounds, setMapBounds] = useState<LatLngBounds>()
 
     const polygons = useMemo(() => {
         let polyObj: PolyObj[] = []
@@ -31,17 +34,12 @@ const MainMap = ({ changeBtn, trigger }: Props) => {
         return polyObj
     }, [kmls])
 
-    const eventHandler = {
-            click: (e: LeafletMouseEvent) => {
-                changeBtn(e.target)
-            }
-    }
-
     return (
         <div id="map">
             <MapContainer scrollWheelZoom
-                center={[8.1906335, -80.9194565]}
+                bounds={mapBounds}
                 zoom={8}
+                center={[8.1906335, -80.9194565]}
                 className='w-full h-full z-0'>
                 <LayersControl position={width! <= 768 ? "topright" : "topleft"} >
                     <LayersControl.BaseLayer checked name="google">
@@ -65,9 +63,7 @@ const MainMap = ({ changeBtn, trigger }: Props) => {
                     </LayersControl.BaseLayer>
                 </LayersControl>
                 <FullscreenControl />
-                {polygons.map((poly, idx) => (
-                    <Polygon color='blue' weight={poly.id === selectedFarm ? 2 : 0} fillOpacity={1} eventHandlers={eventHandler} key={idx} positions={poly.coordinates} />
-                ))}
+                <MapElements changeBtn={changeBtn} polygons={polygons} selectedFarm={selectedFarm} />
             </MapContainer>
         </div>
     );
